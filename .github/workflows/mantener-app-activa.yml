@@ -1,0 +1,35 @@
+name: Mantener app activa
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  despertar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar navegador
+        run: |
+          pip install playwright==1.49.1
+          python -m playwright install --with-deps chromium
+      - name: Visitar y despertar la app
+        run: |
+          python - <<'EOF'
+          from playwright.sync_api import sync_playwright
+          URL = "https://aca2-cancer-mama.streamlit.app/"
+          with sync_playwright() as p:
+              navegador = p.chromium.launch()
+              pagina = navegador.new_page()
+              pagina.goto(URL, timeout=90000)
+              pagina.wait_for_timeout(8000)
+              boton = pagina.get_by_role("button", name="Yes, get this app back up!")
+              if boton.count() > 0:
+                  print("La app estaba dormida: despertándola...")
+                  boton.first.click()
+                  pagina.wait_for_timeout(90000)
+              else:
+                  print("La app ya estaba activa.")
